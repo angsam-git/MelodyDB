@@ -1,0 +1,33 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+  </style>
+
+
+<body>
+  <h1>Melody DB</h1>
+  <h2>{{data_artist_names[0]}}</h2>
+  <h2>{{data_titles[0]}}</h2>
+  <h2>{{data_release_year}}</h2>
+  <h2>Tracks:</h2>
+
+  <div>
+    {% for n in data_song_names %}
+      {% set outer_loop = loop %}
+      {% for m in data_song_ids %}
+        {% if outer_loop.index0 == loop.index0 %}
+            <a href = "/song_id/{{m}}">{{n}}<br></a>
+        {% endif %} 
+      {% endfor %}
+    {% endfor %}
+  </div>
+  <h2>Comments:</h2>
+
+</body>
+</body>
+
+
+</html>
