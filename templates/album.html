@@ -25,8 +25,22 @@
     {% endfor %}
   </div>
   <h2>Comments:</h2>
+  <div>
+    {% for n in data_comments %}
+      {% set outer_loop = loop %}
+      {% for m in data_user_ids %}
+        {% if outer_loop.index0 == loop.index0 %}
+          {% for k in data_user_names %}
+            {% if outer_loop.index0 == loop.index0 %}
+              <a href = "/user_id/{{m}}">{{k}}:<br></a>
+              <p> {{n}} </p>
+            {% endif %} 
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
 
-</body>
 </body>
 
 

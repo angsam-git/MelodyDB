@@ -81,6 +81,8 @@ def artist():
   cursor = g.conn.execute("SELECT * FROM artist WHERE LOWER(name) = LOWER(%s)", artist_name)
   names = []
   ids = []
+
+  ##GET ARTIST NAME FOR ARTIST PAGE
   for result in cursor:
     names.append(result['name'])
     ids.append(result['artist_id'])
@@ -90,6 +92,7 @@ def artist():
     print("could not find") ##TO DO : HANDLE CASE WHEN SEARCH NOT IN TABLE
     return redirect('/')
   
+  ##LIST OF ALBUMS ON ARTIST PAGE ( HYPERLINKS )
   artist_id = ids[0]
   cursor = g.conn.execute("SELECT * FROM album WHERE artist_id = %s order by release_date desc", artist_id)
   album_names = []
@@ -106,7 +109,6 @@ def artist():
 @app.route('/album')
 def album():
   print(request.args)
-  cursor = None
   if len(session['album']) == 0:
     album_id = session['album_id']
     cursor = g.conn.execute("SELECT * FROM album WHERE album_id = %s", album_id)
@@ -117,6 +119,7 @@ def album():
   titles = []
   ids = []
   dates = []
+  ##GET ALBUM INFO FOR ALBUM PAGE
   for result in cursor:
     titles.append(result['title'])
     ids.append(result['album_id'])
@@ -129,25 +132,43 @@ def album():
 
   year = dates[0].year
 
+  ##LIST OF SONGS ON ALBUM PAGE ( HYPERLINKS )
   cursor = g.conn.execute("SELECT * FROM song WHERE album_id = %s order by track_num", album_id)
   artist_ids = []
   song_names = []
   song_ids = []
-  
   for result in cursor:
     song_names.append(result['title'])
     song_ids.append(result['song_id'])
     artist_ids.append(result['artist_id'])
 
+  ##GET ARTIST NAME FOR ALBUM PAGE
   cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", artist_ids[0])
   artist_names = []
   for result in cursor:
     artist_names.append(result['name'])
-  cursor.close()
+  
+  ##GET COMMENT TEXT FOR ALBUM PAGE
+  cursor = g.conn.execute("SELECT * FROM comment WHERE album_id = %s", album_id)
+  comments = []
+  user_ids = []
+  for result in cursor:
+    comments.append(result['text'])
+    user_ids.append(result['user_id'])
 
-  context = dict(data_titles = titles, data_song_names = song_names, data_song_ids = song_ids, data_artist_names = artist_names, data_release_year = year)
+  ##GET USER NAMES FOR ALBUM PAGE ( EACH USERNAME IS A HYPERLINK ABOVE A COMMENT )
+  user_names = []
+  for i in range(len(user_ids)):
+    cursor = g.conn.execute("SELECT * FROM users WHERE user_id = %s", user_ids[i])
+    for result in cursor:
+      user_names.append(result['username'])
+    cursor.close()
+
+  context = dict(data_titles = titles, data_song_names = song_names, data_song_ids = song_ids, data_artist_names = artist_names, 
+                data_release_year = year, data_comments = comments, data_user_ids = user_ids, data_user_names = user_names)
   return render_template("album.html", **context)
   
+## Executes when an album hyperlink is clicked
 @app.route('/album_id/<album_id>', methods=['GET'])
 def album_name(album_id):
   session['album'] = ""
@@ -157,7 +178,6 @@ def album_name(album_id):
 @app.route('/song')
 def song():
   print(request.args)
-  cursor = None
   if len(session['song']) == 0:
     song_id = session['song_id']
     cursor = g.conn.execute("SELECT * FROM song WHERE song_id = %s", song_id)
@@ -165,6 +185,7 @@ def song():
     song_name = session['song']
     cursor = g.conn.execute("SELECT * FROM song WHERE LOWER(title) = LOWER(%s)", song_name)
   
+  ##GET SONG INFO FOR SONG PAGE
   titles = []
   ids = []
   album_ids = []
@@ -182,11 +203,13 @@ def song():
   album_id = ids[1]
   artist_id = ids[2]
 
+  ##GET ALBUM NAME FOR SONG PAGE
   cursor = g.conn.execute("SELECT * FROM album WHERE album_id = %s", album_id)
   album_names = []
   for result in cursor:
     album_names.append(result['title'])
 
+  ##GET ARTIST NAME FOR SONG PAGE
   cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", artist_id)
   artist_names = []
   for result in cursor:
@@ -196,6 +219,7 @@ def song():
   context = dict(data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names)
   return render_template("song.html", **context)
 
+## Executes when a song hyperlink is clicked
 @app.route('/song_id/<song_id>', methods=['GET'])
 def song_name(song_id):
   session['song'] = ""
