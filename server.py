@@ -12,7 +12,7 @@ import os
   # accessible as a variable in index.html:
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response, session, url_for
+from flask import Flask, request, render_template, g, redirect, Response, session, url_for, flash, Markup
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -63,22 +63,20 @@ def index():
   # DEBUG: this is debugging code to see what request looks like
   print(request.args)
 
-  cursor = g.conn.execute("SELECT name FROM test")
-  names = []
-  for result in cursor:
-    names.append(result['name'])  # can also be accessed using result[0]
-  cursor.close()
-
-  context = dict(data = names)
-
-  return render_template("index.html", **context)
+  return render_template("index.html")
 
 
 @app.route('/artist')
 def artist():
   print(request.args)
-  artist_name = session['artist']
-  cursor = g.conn.execute("SELECT * FROM artist WHERE LOWER(name) = LOWER(%s)", artist_name)
+  # artist_name = session['artist']
+  # cursor = g.conn.execute("SELECT * FROM artist WHERE LOWER(name) = LOWER(%s)", artist_name)
+  if len(session['artist']) == 0:
+    artist_id = session['artist_id']
+    cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", artist_id)
+  else:  
+    artist_name = session['artist']
+    cursor = g.conn.execute("SELECT * FROM artist WHERE LOWER(name) = LOWER(%s)", artist_name)
   names = []
   ids = []
 
@@ -89,7 +87,9 @@ def artist():
   cursor.close()
 
   if len(ids) == 0:
-    print("could not find") ##TO DO : HANDLE CASE WHEN SEARCH NOT IN TABLE
+    print("artist not found")
+    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find artist \'{}\'</span>".format(artist_name))
+    flash(msg)
     return redirect('/')
   
   ##LIST OF ALBUMS ON ARTIST PAGE ( HYPERLINKS )
@@ -97,14 +97,66 @@ def artist():
   cursor = g.conn.execute("SELECT * FROM album WHERE artist_id = %s order by release_date desc", artist_id)
   album_names = []
   album_ids = []
+  years = []
   for result in cursor:
     album_names.append(result['title'])
     album_ids.append(result['album_id'])
-
+    years.append(result['release_date'].year)
   cursor.close()
 
-  context = dict(data_names = names, data_album_names = album_names, data_album_ids = album_ids)
+  context = dict(data_names = names, data_album_names = album_names, data_album_ids = album_ids, years = years)
   return render_template("artist.html", **context)
+
+@app.route('/artist_id/<artist_id>', methods=['GET'])
+def artist_name(artist_id):
+  session['artist'] = ""
+  session['artist_id'] = artist_id
+  return redirect(url_for('.artist', artist = artist_id))
+
+@app.route('/user')
+def user():
+  print(request.args)
+  if len(session['user']) == 0:
+    user_id = session['user_id']
+    cursor = g.conn.execute("SELECT * FROM users WHERE user_id = %s", user_id)
+  else:  
+    user_name = session['user']
+    cursor = g.conn.execute("SELECT * FROM users WHERE LOWER(username) = LOWER(%s)", user_name)
+  
+  names = []
+  ids = []
+  emails = []
+
+  ##GET USER NAME FOR USER PAGE
+  for result in cursor:
+    names.append(result['username'])
+    ids.append(result['user_id'])
+    emails.append(result['email'])
+  cursor.close()
+
+  if len(ids) == 0:
+    print("user not found")
+    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find user \'{}\'</span>".format(user_name))
+    flash(msg)
+    return redirect('/')
+  
+  ##COMMENTS COUNT FOR USER PAGE
+  user_id = ids[0]
+  cursor = g.conn.execute("SELECT * FROM comment WHERE user_id = %s", user_id)
+  comment_num=0
+  for result in cursor:
+    comment_num+=1
+  cursor.close()
+
+  context = dict(emails=emails,username=names,comment_num=comment_num,user_ids=ids)
+  return render_template("user.html", **context)
+
+## Executes when an user hyperlink is clicked
+@app.route('/user_id/<user_id>', methods=['GET'])
+def user_name(user_id):
+  session['user'] = ""
+  session['user_id'] = user_id
+  return redirect(url_for('.user', user = user_id))
 
 @app.route('/album')
 def album():
@@ -126,8 +178,12 @@ def album():
     dates.append(result['release_date'])
   
   if len(ids) == 0:
-    print("could not find") ##TO DO : HANDLE CASE WHEN SEARCH NOT IN TABLE
+    print("album not found")
+    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find album \'{}\'</span>".format(album_name))
+    flash(msg)
     return redirect('/')
+  elif len(ids) > 1:
+    return redirect(url_for('.search_list_album', search_list_album = session['album']))
   album_id = ids[0]
 
   year = dates[0].year
@@ -149,7 +205,7 @@ def album():
     artist_names.append(result['name'])
   
   ##GET COMMENT TEXT FOR ALBUM PAGE
-  cursor = g.conn.execute("SELECT * FROM comment WHERE album_id = %s", album_id)
+  cursor = g.conn.execute("SELECT * FROM comment WHERE album_id = %s order by comment_id desc", album_id)
   comments = []
   user_ids = []
   for result in cursor:
@@ -164,7 +220,7 @@ def album():
       user_names.append(result['username'])
     cursor.close()
 
-  context = dict(data_titles = titles, data_song_names = song_names, data_song_ids = song_ids, data_artist_names = artist_names, 
+  context = dict(artist_id = artist_ids[0], data_titles = titles, data_song_names = song_names, data_song_ids = song_ids, data_artist_names = artist_names, 
                 data_release_year = year, data_comments = comments, data_user_ids = user_ids, data_user_names = user_names)
   return render_template("album.html", **context)
   
@@ -188,17 +244,27 @@ def song():
   ##GET SONG INFO FOR SONG PAGE
   titles = []
   ids = []
-  album_ids = []
-  artist_ids = []
+  # album_ids = []
+  # artist_ids = []
+  durations = []
   for result in cursor:
     titles.append(result['title'])
     ids.append(result['song_id'])
     ids.append(result['album_id'])
     ids.append(result['artist_id'])
+    ms = int(result['duration_ms'])
+    seconds = (ms // 1000) % 60
+    mins = (ms // 60000) % 60
+    durations.append("{} min, {} sec".format(mins, seconds))
+
 
   if len(ids) == 0:
-    print("could not find") ##TO DO : HANDLE CASE WHEN SEARCH NOT IN TABLE
+    print("song not found")
+    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find song \'{}\'</span>".format(song_name))
+    flash(msg)
     return redirect('/')
+  elif len(durations) > 1:
+    return redirect(url_for('.search_list_song', search_list_song = session['song']))
   song_id = ids[0]
   album_id = ids[1]
   artist_id = ids[2]
@@ -216,7 +282,22 @@ def song():
     artist_names.append(result['name'])
   cursor.close()
 
-  context = dict(data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names)
+  ##GET COMMENTS FOR SONG PAGE
+  cursor = g.conn.execute("SELECT * FROM comment WHERE song_id=%s order by comment_id desc",song_id)
+  comments = []
+  user_ids = []
+  for result in cursor:
+    comments.append(result['text'])
+    user_ids.append(result['user_id'])
+  cursor.close()
+  ##GET USER NAMES FOR SONG PAGE
+  user_names = []
+  for i in range(len(user_ids)):
+    cursor = g.conn.execute("SELECT * FROM users WHERE user_id = %s", user_ids[i])
+    for result in cursor:
+      user_names.append(result['username'])
+    cursor.close()
+  context = dict(album_id = album_id,artist_id = artist_id,data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names, durations=durations,comments=comments,user_ids=user_ids,user_names=user_names)
   return render_template("song.html", **context)
 
 ## Executes when a song hyperlink is clicked
@@ -226,6 +307,69 @@ def song_name(song_id):
   session['song_id'] = song_id
   return redirect(url_for('.song', song = song_id))
 
+## Multiple results song
+@app.route('/search_list_song')
+def search_list_song():
+  print(request.args)
+  cursor = g.conn.execute("SELECT * FROM song WHERE LOWER(title) = LOWER(%s)", session['song'])
+  song_names = []
+  artist_ids = []
+  album_ids = []
+  song_ids = []
+
+  ##GET ARTIST NAME FOR MULTIPLE SEARCH PAGE
+  for result in cursor:
+    song_names.append(result['title'])
+    artist_ids.append(result['artist_id'])
+    album_ids.append(result['album_id'])
+    song_ids.append(result['song_id'])
+  cursor.close()
+
+  artist_names = []
+  for i in range(len(artist_ids)):
+    cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", artist_ids[i])
+    for result in cursor:
+      artist_names.append(result['name'])
+    cursor.close()
+  
+  ## GET ALBUM NAME FOR EACH RESULT IN PAGE
+  album_names = []
+  years = []
+  for i in range(len(album_ids)):
+    cursor = g.conn.execute("SELECT * FROM album WHERE album_id = %s", album_ids[i])
+    for result in cursor:
+      album_names.append(result['title'])
+      years.append(result['release_date'].year)
+    cursor.close()
+
+  context = dict(artist_names=artist_names,title=song_names,ids=song_ids,album_names=album_names, years=years)
+  return render_template("search_list_song.html", **context)
+
+## Multiple results album
+@app.route('/search_list_album')
+def search_list_album():
+  print(request.args)
+  cursor = g.conn.execute("SELECT * FROM album WHERE LOWER(title) = LOWER(%s)", session['album'])
+  album_names = []
+  artist_ids = []
+  album_ids = []
+  years = []
+  ##GET ARTIST NAME FOR MULTIPLE SEARCH PAGE
+  for result in cursor:
+    album_names.append(result['title'])
+    artist_ids.append(result['artist_id'])
+    album_ids.append(result['album_id'])
+    years.append(result['release_date'].year)
+  cursor.close()
+
+  artist_names = []
+  for i in range(len(artist_ids)):
+    cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", artist_ids[i])
+    for result in cursor:
+      artist_names.append(result['name'])
+    cursor.close()
+  context = dict(artist_names=artist_names,title=album_names,ids=album_ids,years=years)
+  return render_template("search_list_album.html", **context)
 
 ### Search functionality on index page
 @app.route('/search', methods=['POST'])
@@ -233,6 +377,7 @@ def search():
   session['album_id'] = 0
   session['song_id'] = 0
   session['artist_id'] = 0
+  session['user_id'] = 0
   searched_name = request.form['name']
   search_type = request.form['type']
   if search_type == "artist":
@@ -244,8 +389,44 @@ def search():
   elif search_type == "song":
     session['song'] = searched_name
     return redirect(url_for('.song', song = searched_name))
+    # return redirect(url_for('.search_list', search_list = searched_name))
+  elif search_type == "user":
+    session['user'] = searched_name
+    return redirect(url_for('.user', user = searched_name))
 
+@app.route('/album_comment', methods=['POST'])
+def album_comment():
+  text = request.form['text']
+  album_id = session['album_id']
+#  try: 
+#    user_id = session['user_id']
+#  except:
+#    msg = Markup("<span style=\"background-color: #FFCCCC\">Please sign in</span>")
+#    flash(msg)
+#    return redirect(url_for('.album', album = session['album_id']))
+  ##SET COMMENT ID
+  cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
+  for result in cursor:
+    comment_id = result['comment_id']
+  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, %s, null)', text, comment_id + 1, 1, album_id)
+  return redirect(url_for('.album', album = session['album_id']))
 
+@app.route('/song_comment', methods=['POST'])
+def song_comment():
+  text = request.form['text']
+  song_id = session['song_id']
+#  try: 
+#    user_id = session['user_id']
+#  except:
+#    msg = Markup("<span style=\"background-color: #FFCCCC\">Please sign in</span>")
+#    flash(msg)
+#    return redirect(url_for('.song', song = session['song_id']))
+  ##SET COMMENT ID
+  cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
+  for result in cursor:
+    comment_id = result['comment_id']
+  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, null, %s)', text, comment_id + 1, 1, song_id)
+  return redirect(url_for('.song', song = session['song_id']))
 
 @app.route('/login')
 def login():
