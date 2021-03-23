@@ -493,11 +493,11 @@ def song_comment():
 ##DELETE COMMENTS BY ADDING INTO MODERATOR_COMMENT TABLE
 @app.route('/delete/<comment_id>', methods=['GET'])
 def delete(comment_id):
-  mod_id = session['moderator_id']
+  mod_id = session['moderator']
   if mod_id > 0:
     g.conn.execute('INSERT INTO moderator_comment(user_id, comment_id) VALUES (%s, %s)', mod_id, comment_id)
   else:
-    g.conn.execute('INSERT INTO moderator_comment(user_id, comment_id) VALUES (%s, %s)', 1, comment_id) ##when a user deletes their own comment, moderator_id 1 is used
+    g.conn.execute('INSERT INTO moderator_comment(user_id, comment_id) VALUES (%s, %s)', 1, comment_id) ##when a user deletes their own comment, moderator 1 is used
   if int(session['song_id']) > 0:
     song_id = session['song_id']
     return redirect(url_for('.song', song = song_id))
