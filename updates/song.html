@@ -1,0 +1,43 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+  </style>
+
+
+<body>
+  <h6 style="text-align: right;"><a href="/">Log out</a></h6>
+  <h1>Melody DB Song Page</h1>
+  <h2>{{data_titles[0]}} by <a href="/artist_id/{{artist_id}}">{{data_artist_names[0]}}</a></h2>
+  <h4>Album: <a href="/album_id/{{album_id}}">{{data_album_names[0]}}</a></h4>
+  <h4>Duration: {{durations[0]}}</h4>
+  <p><a href="/index">Back to search</a></p>
+  <h4>Comments:</h4>
+  <form method="POST" action="/song_comment">
+    <p>Add a comment: <input type="text" name="text"> <input type="submit" value="Add"></p>
+    <div class="flashes">
+      {% for message in get_flashed_messages() %}
+        {{ message }}
+      {% endfor %}
+    </div>
+  <div>
+    {% for n in comments %}
+      {% set outer_loop = loop %}
+      {% for m in user_ids %}
+        {% if outer_loop.index0 == loop.index0 %}
+          {% for k in user_names %}
+            {% if outer_loop.index0 == loop.index0 %}
+              <p><a href = "/user_id/{{m}}">{{k}}:</a> {{n}}</p>
+            {% endif %} 
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+  
+</body>
+
+
+</html>

@@ -1,0 +1,41 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+  </style>
+
+
+<body>
+  <h6 style="text-align: right;"><a href="/">Log out</a></h6>
+  <h1>Melody DB Search List</h1>
+  <h2>{{title[0]}}</h2>
+  <div>
+    {% for n in artist_names %}
+      {% set outer_loop = loop %}
+      {% for m in ids %}
+        {% if outer_loop.index0 == loop.index0 %}
+          {% for k in years %}
+            {% if outer_loop.index0 == loop.index0 %}
+              <a href = "/album_id/{{m}}">{{title[0]}} by {{n}} ({{k}})<br></a> 
+            {% endif %} 
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <!-- <div>
+    {% for n in data_album_names %}
+      {% set outer_loop = loop %}
+      {% for m in data_album_ids %}
+        {% if outer_loop.index0 == loop.index0 %}
+            <a href = "/album_id/{{m}}">{{n}}<br></a>
+        {% endif %} 
+      {% endfor %}
+    {% endfor %}
+  </div> -->
+</body>
+<p><a href="/index">Back to search</a></p>
+</html>
