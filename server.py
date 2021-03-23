@@ -247,6 +247,7 @@ def song():
   # album_ids = []
   # artist_ids = []
   durations = []
+  features = []
   for result in cursor:
     titles.append(result['title'])
     ids.append(result['song_id'])
@@ -256,6 +257,7 @@ def song():
     seconds = (ms // 1000) % 60
     mins = (ms // 60000) % 60
     durations.append("{} min, {} sec".format(mins, seconds))
+    features.append(result['artist_features'])
 
 
   if len(ids) == 0:
@@ -268,6 +270,17 @@ def song():
   song_id = ids[0]
   album_id = ids[1]
   artist_id = ids[2]
+  feature_names = []
+
+  ##GET ARTIST FEATURES FOR SONG PAGE
+  try:
+    for i in range(len(features[0])):
+      cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", features[0][i])
+      for result in cursor:
+        feature_names.append(result['name'])
+      cursor.close()
+  except:
+    features[0] = ""
 
   ##GET ALBUM NAME FOR SONG PAGE
   cursor = g.conn.execute("SELECT * FROM album WHERE album_id = %s", album_id)
@@ -297,7 +310,8 @@ def song():
     for result in cursor:
       user_names.append(result['username'])
     cursor.close()
-  context = dict(album_id = album_id,artist_id = artist_id,data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names, durations=durations,comments=comments,user_ids=user_ids,user_names=user_names)
+  context = dict(album_id = album_id,artist_id = artist_id,data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names, 
+                  durations=durations,comments=comments,user_ids=user_ids,user_names=user_names, features=features, feature_names=feature_names)
   return render_template("song.html", **context)
 
 ## Executes when a song hyperlink is clicked
