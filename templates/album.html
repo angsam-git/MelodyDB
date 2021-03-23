@@ -8,6 +8,7 @@
 
 
 <body>
+  <h6 style="text-align: right;"><a href="/">Log out</a></h6>
   <h1>Melody DB Album Page</h1>
   <h2>{{data_titles[0]}} by <a href="/artist_id/{{artist_id}}">{{data_artist_names[0]}}</a></h2>
   <h4>Release Year: {{data_release_year}}</h2>
@@ -23,7 +24,7 @@
       {% endfor %}
     {% endfor %}
   </div>
-  <p><a href="/">Back to search</a></p>
+  <p><a href="/index">Back to search</a></p>
   <h4>Comments:</h4>
   <form method="POST" action="/album_comment">
     <p>Add a comment: <input type="text" name="text"> <input type="submit" value="Add"></p>
@@ -32,19 +33,26 @@
         {{ message }}
       {% endfor %}
     </div>
-  <div>
-    {% for n in data_comments %}
-      {% set outer_loop = loop %}
-      {% for m in data_user_ids %}
-        {% if outer_loop.index0 == loop.index0 %}
-          {% for k in data_user_names %}
-            {% if outer_loop.index0 == loop.index0 %}
-            <p><a href = "/user_id/{{m}}">{{k}}:</a> {{n}}</p>
-            {% endif %} 
+    <div>
+      {% for n in data_comments %}
+        {% set outer_loop = loop %}
+        {% for m in data_user_ids %}
+          {% if outer_loop.index0 == loop.index0 %}
+            {% for j in data_user_names %}
+                {% if outer_loop.index0 == loop.index0 %}
+                  {% for k in comment_ids %}
+                    {% if outer_loop.index0 == loop.index0 %}
+                      <p><a href = "/user_id/{{m}}">{{j}}:</a> {{n}} 
+                        {% if (m == client_id or mod_id > 0) %}
+                          <a href = "/delete/{{k}}">DELETE</a>
+                        {% endif %} </p>
+                    {% endif %} 
+                  {% endfor %}
+                {% endif %} 
+              {% endfor %}
+            {% endif %}
           {% endfor %}
-        {% endif %}
-      {% endfor %}
-    {% endfor %}
-  </div>
+        {% endfor %}
+    </div>
 </body>
 </html>

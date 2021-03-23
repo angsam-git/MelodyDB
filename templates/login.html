@@ -1,0 +1,30 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+  </style>
+
+
+<body>
+  <h1>Melody DB Login Page</h1>
+  <form method="POST" action="/logins">
+    <label for="uname">Username</label>
+    <br>
+    <input type="text" placeholder="Enter Username" name='uname' required>
+    <br>
+    <label for="psw">Password</label>
+    <br>
+    <input type="text" placeholder="Enter Password" name='psw' required>
+    <br>
+    <button type='submit'>Login</button>
+  </form>
+  <p>for testing purposes: username: danny password: 123456</p>
+  <div class="flashes">
+    {% for message in get_flashed_messages() %}
+      {{ message }}
+    {% endfor %}
+  </div>
+</body>
+</html>

@@ -48,7 +48,7 @@ def teardown_request(exception):
   except Exception as e:
     pass
 
-@app.route('/')
+@app.route('/index')
 def index():
   """
   request is a special object that Flask provides to access web request information:
@@ -90,7 +90,7 @@ def artist():
     print("artist not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find artist \'{}\'</span>".format(artist_name))
     flash(msg)
-    return redirect('/')
+    return redirect('/index')
   
   ##LIST OF ALBUMS ON ARTIST PAGE ( HYPERLINKS )
   artist_id = ids[0]
@@ -106,6 +106,7 @@ def artist():
 
   context = dict(data_names = names, data_album_names = album_names, data_album_ids = album_ids, years = years)
   return render_template("artist.html", **context)
+
 
 @app.route('/artist_id/<artist_id>', methods=['GET'])
 def artist_name(artist_id):
@@ -138,7 +139,7 @@ def user():
     print("user not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find user \'{}\'</span>".format(user_name))
     flash(msg)
-    return redirect('/')
+    return redirect('/index')
   
   ##COMMENTS COUNT FOR USER PAGE
   user_id = ids[0]
@@ -205,11 +206,13 @@ def album():
     artist_names.append(result['name'])
   
   ##GET COMMENT TEXT FOR ALBUM PAGE
-  cursor = g.conn.execute("SELECT * FROM comment WHERE album_id = %s order by comment_id desc", album_id)
+  cursor = g.conn.execute("SELECT text, comment_id, user_id FROM comment WHERE album_id=%s and comment_id NOT IN (SELECT comment_id FROM moderator_comment) order by comment_id desc",album_id)
   comments = []
+  comment_ids = []
   user_ids = []
   for result in cursor:
     comments.append(result['text'])
+    comment_ids.append(result['comment_id'])
     user_ids.append(result['user_id'])
 
   ##GET USER NAMES FOR ALBUM PAGE ( EACH USERNAME IS A HYPERLINK ABOVE A COMMENT )
@@ -221,7 +224,8 @@ def album():
     cursor.close()
 
   context = dict(artist_id = artist_ids[0], data_titles = titles, data_song_names = song_names, data_song_ids = song_ids, data_artist_names = artist_names, 
-                data_release_year = year, data_comments = comments, data_user_ids = user_ids, data_user_names = user_names)
+                data_release_year = year, data_comments = comments, data_user_ids = user_ids, data_user_names = user_names, comment_ids = comment_ids,
+                client_id = session['client_id'], mod_id = session['moderator'])
   return render_template("album.html", **context)
   
 ## Executes when an album hyperlink is clicked
@@ -296,11 +300,13 @@ def song():
   cursor.close()
 
   ##GET COMMENTS FOR SONG PAGE
-  cursor = g.conn.execute("SELECT * FROM comment WHERE song_id=%s order by comment_id desc",song_id)
+  cursor = g.conn.execute("SELECT text, comment_id, user_id FROM comment WHERE song_id=%s and comment_id NOT IN (SELECT comment_id FROM moderator_comment) order by comment_id desc",song_id)
   comments = []
+  comment_ids = []
   user_ids = []
   for result in cursor:
     comments.append(result['text'])
+    comment_ids.append(result['comment_id'])
     user_ids.append(result['user_id'])
   cursor.close()
   ##GET USER NAMES FOR SONG PAGE
@@ -310,8 +316,10 @@ def song():
     for result in cursor:
       user_names.append(result['username'])
     cursor.close()
+  
   context = dict(album_id = album_id,artist_id = artist_id,data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names, 
-                  durations=durations,comments=comments,user_ids=user_ids,user_names=user_names, features=features, feature_names=feature_names)
+                  durations=durations,comments=comments,user_ids=user_ids,user_names=user_names, features=features, feature_names=feature_names, comment_ids = comment_ids, 
+                  client_id = session['client_id'], mod_id = session['moderator'])
   return render_template("song.html", **context)
 
 ## Executes when a song hyperlink is clicked
@@ -408,6 +416,47 @@ def search():
     session['user'] = searched_name
     return redirect(url_for('.user', user = searched_name))
 
+@app.route('/logins', methods=['POST'])
+def logins():
+  session['moderator'] = 0
+  session['client_id']= 0
+  uname = request.form['uname']
+  password = request.form['psw']
+  pword = []
+  uid = []
+  cursor = g.conn.execute("SELECT * FROM users WHERE LOWER(username) = LOWER(%s)",uname)
+  for result in cursor:
+    pword.append(result['password'])
+    uid.append(result['user_id'])
+  cursor.close()
+  if len(pword)!=0:
+    if password == pword[0]:
+      session['client_id']=uid[0]
+      cursor = g.conn.execute("SELECT * FROM moderator WHERE user_id = %s",session['client_id'])
+      mod_id = []
+      for result in cursor:
+        mod_id.append(result['user_id'])
+      cursor.close()
+      if len(mod_id) > 0:
+        session['moderator'] = 1
+      else:
+        session['moderator'] = 0
+      print("Successful login")
+      return redirect(url_for('.index', client_id = session['client_id']))
+    else:
+      print("Wrong password")
+      msg = Markup("<span style=\"background-color: #FFCCCC\">Wrong password, try again.</span>")
+      flash(msg)
+      return redirect('/')
+  else:
+    print("User not found")
+    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find user \'{}\'</span>".format(uname))
+    flash(msg)
+    return redirect('/')
+
+
+ 
+
 @app.route('/album_comment', methods=['POST'])
 def album_comment():
   text = request.form['text']
@@ -422,30 +471,41 @@ def album_comment():
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
   for result in cursor:
     comment_id = result['comment_id']
-  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, %s, null)', text, comment_id + 1, 1, album_id)
+  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, %s, null)', text, comment_id + 1, session['client_id'], album_id)
   return redirect(url_for('.album', album = session['album_id']))
 
 @app.route('/song_comment', methods=['POST'])
 def song_comment():
   text = request.form['text']
   song_id = session['song_id']
-#  try: 
-#    user_id = session['user_id']
-#  except:
-#    msg = Markup("<span style=\"background-color: #FFCCCC\">Please sign in</span>")
-#    flash(msg)
-#    return redirect(url_for('.song', song = session['song_id']))
-  ##SET COMMENT ID
+
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
   for result in cursor:
     comment_id = result['comment_id']
-  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, null, %s)', text, comment_id + 1, 1, song_id)
+  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, null, %s)', text, comment_id + 1, session['client_id'], song_id)
   return redirect(url_for('.song', song = session['song_id']))
 
-@app.route('/login')
+##DELETE COMMENTS BY ADDING INTO MODERATOR_COMMENT TABLE
+@app.route('/delete/<comment_id>', methods=['GET'])
+def delete(comment_id):
+  mod_id = session['moderator_id']
+  if mod_id > 0:
+    g.conn.execute('INSERT INTO moderator_comment(user_id, comment_id) VALUES (%s, %s)', mod_id, comment_id)
+  else:
+    g.conn.execute('INSERT INTO moderator_comment(user_id, comment_id) VALUES (%s, %s)', 1, comment_id) ##when a user deletes their own comment, moderator_id 1 is used
+  if int(session['song_id']) > 0:
+    song_id = session['song_id']
+    return redirect(url_for('.song', song = song_id))
+  else:
+    album_id = session['album_id']
+    return redirect(url_for('.album', album = album_id))
+
+
+@app.route('/')
 def login():
-    abort(401)
-    this_is_never_executed()
+    # abort(401)
+    # this_is_never_executed()
+    return render_template("login.html")
 
 
 if __name__ == "__main__":
