@@ -182,7 +182,7 @@ def album():
     print("album not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find album \'{}\'</span>".format(album_name))
     flash(msg)
-    return redirect('/')
+    return redirect('/index')
   elif len(ids) > 1:
     return redirect(url_for('.search_list_album', search_list_album = session['album']))
   album_id = ids[0]
@@ -268,7 +268,7 @@ def song():
     print("song not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find song \'{}\'</span>".format(song_name))
     flash(msg)
-    return redirect('/')
+    return redirect('/index')
   elif len(durations) > 1:
     return redirect(url_for('.search_list_song', search_list_song = session['song']))
   song_id = ids[0]
