@@ -13,6 +13,17 @@
   <h2>{{data_titles[0]}} by <a href="/artist_id/{{artist_id}}">{{data_artist_names[0]}}</a></h2>
   <h4>Album: <a href="/album_id/{{album_id}}">{{data_album_names[0]}}</a></h4>
   <h4>Duration: {{durations[0]}}</h4>
+  {% if features[0] != "" %}
+  <h4>Featuring:
+    {% for i in features[0] %}
+      {% set outer_loop = loop %}
+      {% for j in feature_names %}
+        {% if outer_loop.index0 == loop.index0 %}
+      <a href="/artist_id/{{i}}">{{j}}</a>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  {% endif %}</h4>
   <h4>Rating: {{rating[0]}}</h4>
   <p><a href="/index">Back to search</a></p>
   <h4>Comments:</h4>
