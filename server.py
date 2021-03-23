@@ -317,9 +317,14 @@ def song():
       user_names.append(result['username'])
     cursor.close()
   
+  rating = []
+  cursor = g.conn.execute("SELECT AVG(rating) as rating from user_rates_song WHERE song_id =%s", song_id)
+  for result in cursor:
+    rating.append(result['rating'])
+
   context = dict(album_id = album_id,artist_id = artist_id,data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names, 
                   durations=durations,comments=comments,user_ids=user_ids,user_names=user_names, features=features, feature_names=feature_names, comment_ids = comment_ids, 
-                  client_id = session['client_id'], mod_id = session['moderator'])
+                  client_id = session['client_id'], mod_id = session['moderator'], rating = rating)
   return render_template("song.html", **context)
 
 ## Executes when a song hyperlink is clicked
