@@ -182,7 +182,7 @@ def album():
     print("album not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find album \'{}\'</span>".format(album_name))
     flash(msg)
-    return redirect('/index')
+    return redirect('/')
   elif len(ids) > 1:
     return redirect(url_for('.search_list_album', search_list_album = session['album']))
   album_id = ids[0]
@@ -268,7 +268,7 @@ def song():
     print("song not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find song \'{}\'</span>".format(song_name))
     flash(msg)
-    return redirect('/index')
+    return redirect('/')
   elif len(durations) > 1:
     return redirect(url_for('.search_list_song', search_list_song = session['song']))
   song_id = ids[0]
@@ -407,6 +407,10 @@ def search():
   session['user_id'] = 0
   searched_name = request.form['name']
   search_type = request.form['type']
+  if len(searched_name) == 0:
+    msg = Markup("<span style=\"background-color: #FFCCCC\">Please fill the search field</span>")
+    flash(msg)
+    return redirect('/index')
   if search_type == "artist":
     session['artist'] = searched_name
     return redirect(url_for('.artist', artist = searched_name))
@@ -466,13 +470,8 @@ def logins():
 def album_comment():
   text = request.form['text']
   album_id = session['album_id']
-#  try: 
-#    user_id = session['user_id']
-#  except:
-#    msg = Markup("<span style=\"background-color: #FFCCCC\">Please sign in</span>")
-#    flash(msg)
-#    return redirect(url_for('.album', album = session['album_id']))
-  ##SET COMMENT ID
+  if len(text) == 0:
+    return redirect(url_for('.album', album = session['album_id']))
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
   for result in cursor:
     comment_id = result['comment_id']
@@ -483,7 +482,8 @@ def album_comment():
 def song_comment():
   text = request.form['text']
   song_id = session['song_id']
-
+  if len(text) == 0:
+    return redirect(url_for('.song', song = session['song_id']))
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
   for result in cursor:
     comment_id = result['comment_id']
