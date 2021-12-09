@@ -1,15 +1,4 @@
-
-"""
-Columbia's COMS W4111.001 Introduction to Databases
-Example Webserver
-To run locally:
-    python server.py
-Go to http://localhost:8111 in your browser.
-A debugger such as "pdb" may be helpful for debugging.
-Read about it online.
-"""
 import os
-  # accessible as a variable in index.html:
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, session, url_for, flash, Markup
@@ -17,32 +6,21 @@ from flask import Flask, request, render_template, g, redirect, Response, sessio
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 
-DATABASEURI = "postgresql://asm2265:proj75pw@34.73.36.248/project1" # Modify this with your own credentials you received from Joseph!
+DATABASEURI = "postgresql://postgres:melody@localhost:5432/MelodyDB"
 
 engine = create_engine(DATABASEURI)
 
 @app.before_request
 def before_request():
-  """
-  This function is run at the beginning of every web request 
-  (every time you enter an address in the web browser).
-  We use it to setup a database connection that can be used throughout the request.
-
-  The variable g is globally accessible.
-  """
   try:
     g.conn = engine.connect()
   except:
-    print("uh oh, problem connecting to database")
+    print("error connecting to database")
     import traceback; traceback.print_exc()
     g.conn = None
 
 @app.teardown_request
 def teardown_request(exception):
-  """
-  At the end of the web request, this makes sure to close the database connection.
-  If you don't, the database could run out of memory!
-  """
   try:
     g.conn.close()
   except Exception as e:
@@ -50,20 +28,12 @@ def teardown_request(exception):
 
 @app.route('/index')
 def index():
-  """
-  request is a special object that Flask provides to access web request information:
-
-  request.method:   "GET" or "POST"
-  request.form:     if the browser submitted a form, this contains the data in the form
-  request.args:     dictionary of URL arguments, e.g., {a:1, b:2} for http://localhost?a=1&b=2
-
-  See its API: https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data
-  """
-
-  # DEBUG: this is debugging code to see what request looks like
   print(request.args)
 
-  return render_template("index.html")
+  if session.get('selected_user') != True:
+    return redirect('/')
+  context = dict(user_name = session['user_name'], client_id = session['client_id'])
+  return render_template("index.html", **context)
 
 
 @app.route('/artist')
@@ -71,6 +41,7 @@ def artist():
   print(request.args)
   # artist_name = session['artist']
   # cursor = g.conn.execute("SELECT * FROM artist WHERE LOWER(name) = LOWER(%s)", artist_name)
+
   if len(session['artist']) == 0:
     artist_id = session['artist_id']
     cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", artist_id)
@@ -104,7 +75,7 @@ def artist():
     years.append(result['release_date'].year)
   cursor.close()
 
-  context = dict(data_names = names, data_album_names = album_names, data_album_ids = album_ids, years = years)
+  context = dict(data_names = names, data_album_names = album_names, data_album_ids = album_ids, years = years, client_id = session['client_id'],user_name = session['user_name'])
   return render_template("artist.html", **context)
 
 
@@ -149,7 +120,7 @@ def user():
     comment_num+=1
   cursor.close()
 
-  context = dict(emails=emails,username=names,comment_num=comment_num,user_ids=ids)
+  context = dict(emails=emails,username=names,comment_num=comment_num,user_ids=ids, client_id = session['client_id'],user_name = session['user_name'])
   return render_template("user.html", **context)
 
 ## Executes when an user hyperlink is clicked
@@ -159,8 +130,17 @@ def user_name(user_id):
   session['user_id'] = user_id
   return redirect(url_for('.user', user = user_id))
 
+def round_half(x):
+    return round(x * 2) / 2
+
 @app.route('/album')
 def album():
+  session['song_id'] = 0
+  ##if user not logged in set as guest
+  if 'client_id' not in session:
+    session['client_id'] = 0
+    session['moderator'] = 0
+
   print(request.args)
   if len(session['album']) == 0:
     album_id = session['album_id']
@@ -169,6 +149,8 @@ def album():
     album_name = session['album']
     cursor = g.conn.execute("SELECT * FROM album WHERE LOWER(title) = LOWER(%s)", album_name)
   
+  print("HERE: %s", session['client_id'])
+
   titles = []
   ids = []
   dates = []
@@ -182,7 +164,7 @@ def album():
     print("album not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find album \'{}\'</span>".format(album_name))
     flash(msg)
-    return redirect('/')
+    return redirect('/index')
   elif len(ids) > 1:
     return redirect(url_for('.search_list_album', search_list_album = session['album']))
   album_id = ids[0]
@@ -194,10 +176,38 @@ def album():
   artist_ids = []
   song_names = []
   song_ids = []
+  song_durations = []
+  song_durations_formatted = []
+  song_ratings = []
   for result in cursor:
     song_names.append(result['title'])
     song_ids.append(result['song_id'])
     artist_ids.append(result['artist_id'])
+    rating = []
+    cursor_two = g.conn.execute("SELECT AVG(rating)::numeric(3,2) as rating from user_rates_song WHERE song_id =%s", result['song_id'])
+    for result_two in cursor_two:
+      rating.append(result_two['rating'])
+    if rating[0] is None:
+      song_ratings.append(2.5)
+    else:
+      song_ratings.append(round_half(float(rating[0])))
+    ms = int(result['duration_ms'])
+    seconds = (ms // 1000) % 60
+    mins = (ms // 60000) % 60
+    song_durations.append(ms)
+    song_durations_formatted.append("{} min, {} sec".format(mins, seconds))
+  
+
+  album_len = len(song_ids)
+  album_duration_ms = sum(song_durations)
+  seconds = (album_duration_ms // 1000) % 60
+  mins = (album_duration_ms // 60000) % 60
+  hrs = (album_duration_ms // 3600000)
+  album_duration = []
+  if hrs > 0:
+    album_duration.append("{} hr, {} min".format(hrs, mins))
+  else:
+    album_duration.append("{} min, {} sec".format(mins, seconds))
 
   ##GET ARTIST NAME FOR ALBUM PAGE
   cursor = g.conn.execute("SELECT * FROM artist WHERE artist_id = %s", artist_ids[0])
@@ -223,11 +233,11 @@ def album():
       user_names.append(result['username'])
     cursor.close()
 
-  context = dict(artist_id = artist_ids[0], data_titles = titles, data_song_names = song_names, data_song_ids = song_ids, data_artist_names = artist_names, 
-                data_release_year = year, data_comments = comments, data_user_ids = user_ids, data_user_names = user_names, comment_ids = comment_ids,
-                client_id = session['client_id'], mod_id = session['moderator'])
+  context = dict(artist_id = artist_ids[0], data_titles = titles, data_song_names = song_names, data_song_ids = song_ids, data_artist_names = artist_names, data_album_len = album_len, data_album_duration = album_duration[0],
+                data_release_year = year, data_comments = comments, data_user_ids = user_ids, data_user_names = user_names, comment_ids = comment_ids, data_song_durations = song_durations_formatted, data_song_ratings = song_ratings,
+                client_id = session['client_id'], mod_id = session['moderator'],user_name = session['user_name'])
   return render_template("album.html", **context)
-  
+
 ## Executes when an album hyperlink is clicked
 @app.route('/album_id/<album_id>', methods=['GET'])
 def album_name(album_id):
@@ -237,6 +247,12 @@ def album_name(album_id):
 
 @app.route('/song')
 def song():
+
+  ##if user not logged in set as guest
+  if 'client_id' not in session:
+    session['client_id'] = 0
+    session['moderator'] = 0
+
   print(request.args)
   if len(session['song']) == 0:
     song_id = session['song_id']
@@ -268,7 +284,7 @@ def song():
     print("song not found")
     msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find song \'{}\'</span>".format(song_name))
     flash(msg)
-    return redirect('/')
+    return redirect('/index')
   elif len(durations) > 1:
     return redirect(url_for('.search_list_song', search_list_song = session['song']))
   song_id = ids[0]
@@ -318,13 +334,17 @@ def song():
     cursor.close()
   
   rating = []
-  cursor = g.conn.execute("SELECT AVG(rating) as rating from user_rates_song WHERE song_id =%s", song_id)
+  cursor = g.conn.execute("SELECT AVG(rating)::numeric(3,2) as rating from user_rates_song WHERE song_id =%s", song_id)
   for result in cursor:
-    rating.append(result['rating'])
+    if result['rating'] is not None:
+      rating.append(round_half(float(result['rating'])))
+    else:
+      rating.append(round_half(2.5))
+  
 
   context = dict(album_id = album_id,artist_id = artist_id,data_titles = titles, data_ids = ids, data_album_names = album_names, data_artist_names = artist_names, 
                   durations=durations,comments=comments,user_ids=user_ids,user_names=user_names, features=features, feature_names=feature_names, comment_ids = comment_ids, 
-                  client_id = session['client_id'], mod_id = session['moderator'], rating = rating)
+                  client_id = session['client_id'], mod_id = session['moderator'], rating = rating,user_name = session['user_name'])
   return render_template("song.html", **context)
 
 ## Executes when a song hyperlink is clicked
@@ -333,6 +353,18 @@ def song_name(song_id):
   session['song'] = ""
   session['song_id'] = song_id
   return redirect(url_for('.song', song = song_id))
+
+## Executes when a user rates a song
+@app.route('/user_rate/<rating>', methods=['GET'])
+def user_rates(rating):
+  print(session['client_id'])
+  if session['client_id'] == 0:
+    return redirect('/')
+  try:
+    cursor = g.conn.execute("INSERT INTO user_rates_song(song_id, rating, user_id) VALUES(%s, %s, %s)", session['song_id'], rating, session['client_id'])
+  except:
+    cursor = g.conn.execute("UPDATE user_rates_song SET rating = %s WHERE song_id = %s and user_id = %s", rating, session['song_id'], session['client_id'])
+  return redirect(url_for('.song', song = session['song_id']))
 
 ## Multiple results song
 @app.route('/search_list_song')
@@ -358,7 +390,7 @@ def search_list_song():
     for result in cursor:
       artist_names.append(result['name'])
     cursor.close()
-  
+
   ## GET ALBUM NAME FOR EACH RESULT IN PAGE
   album_names = []
   years = []
@@ -369,7 +401,7 @@ def search_list_song():
       years.append(result['release_date'].year)
     cursor.close()
 
-  context = dict(artist_names=artist_names,title=song_names,ids=song_ids,album_names=album_names, years=years)
+  context = dict(artist_names=artist_names,title=song_names,ids=song_ids,album_names=album_names, years=years, client_id = session['client_id'],user_name = session['user_name'])
   return render_template("search_list_song.html", **context)
 
 ## Multiple results album
@@ -395,7 +427,7 @@ def search_list_album():
     for result in cursor:
       artist_names.append(result['name'])
     cursor.close()
-  context = dict(artist_names=artist_names,title=album_names,ids=album_ids,years=years)
+  context = dict(artist_names=artist_names,title=album_names,ids=album_ids,years=years, client_id = session['client_id'],user_name = session['user_name'])
   return render_template("search_list_album.html", **context)
 
 ### Search functionality on index page
@@ -428,7 +460,8 @@ def search():
 @app.route('/logins', methods=['POST'])
 def logins():
   session['moderator'] = 0
-  session['client_id']= 0
+  session['client_id'] = 0
+
   uname = request.form['uname']
   password = request.form['psw']
   pword = []
@@ -451,6 +484,8 @@ def logins():
       else:
         session['moderator'] = 0
       print("Successful login")
+      session['user_name'] = uname
+      session['selected_user'] = True
       return redirect(url_for('.index', client_id = session['client_id']))
     else:
       print("Wrong password")
@@ -463,13 +498,23 @@ def logins():
     flash(msg)
     return redirect('/')
 
-
+@app.route('/guest_login')
+def guest_login():
+  session['selected_user'] = True
+  session['user_name'] = 'Guest'
+  return redirect(url_for('.index', client_id = 0))
  
-
+##EXECUTES WHEN COMMENT IS ADDED TO AN ALBUM PAGE
 @app.route('/album_comment', methods=['POST'])
 def album_comment():
+
+  ##Redirect to login page if user not logged in
+  if session['client_id'] == 0:
+    return redirect('/')
+
   text = request.form['text']
   album_id = session['album_id']
+
   if len(text) == 0:
     return redirect(url_for('.album', album = session['album_id']))
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
@@ -478,10 +523,17 @@ def album_comment():
   g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, %s, null)', text, comment_id + 1, session['client_id'], album_id)
   return redirect(url_for('.album', album = session['album_id']))
 
+##EXECUTES WHEN COMMENT IS ADDED TO A SONG PAGE
 @app.route('/song_comment', methods=['POST'])
 def song_comment():
+
+  ##Redirect to login page if user not logged in
+  if session['client_id'] == 0:
+    return redirect('/')
+
   text = request.form['text']
   song_id = session['song_id']
+
   if len(text) == 0:
     return redirect(url_for('.song', song = session['song_id']))
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
@@ -503,14 +555,23 @@ def delete(comment_id):
     return redirect(url_for('.song', song = song_id))
   else:
     album_id = session['album_id']
-    return redirect(url_for('.album', album = album_id))
+    print(album_id)
+    return redirect(url_for('.album', album_id = album_id))
 
 
 @app.route('/')
 def login():
-    # abort(401)
-    # this_is_never_executed()
+    if 'client_id' not in session:
+      session['client_id'] = 0
+    elif session['client_id'] != 0:
+      return redirect('/index')
     return render_template("login.html")
+
+@app.route('/logout')
+def logout():
+  session['selected_user'] = False
+  session['client_id'] = 0
+  return redirect('/')
 
 
 if __name__ == "__main__":
@@ -522,18 +583,6 @@ if __name__ == "__main__":
   @click.argument('HOST', default='0.0.0.0')
   @click.argument('PORT', default=8111, type=int)
   def run(debug, threaded, host, port):
-    """
-    This function handles command line parameters.
-    Run the server using:
-
-        python server.py
-
-    Show the help text using:
-
-        python server.py --help
-
-    """
-
     HOST, PORT = host, port
     print("running on %s:%d" % (HOST, PORT))
     app.secret_key = 'secret_key'

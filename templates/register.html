@@ -14,7 +14,7 @@
 <body class="login_page">
   <div class = "home_logo"></div>
   <div class = "search_box">
-    <h1>Login</h1>
+    <h1>Register</h1>
     
     <form method="POST" action="/logins">
       <label for="uname">Username</label>
@@ -25,9 +25,11 @@
       <br>
       <input type="password" placeholder="Enter Password" name='psw' required></input>
       <br>
-      <button type='submit'>Login</button>
+      <button type='submit'>Register</button>
     </form>
-    <div class = "register"><a class="btn btn-primary" href="/guest_login"><span style = "position: relative; top: -5px;">Register</span></a></div>
+    <p>Already signed up?</p>
+    <div class = "login_redirect"><a href="/logins">Login</a></div>
+    
     <p><a href="/guest_login">Continue as Guest</a></p>
     <div class="flashes">
       {% for message in get_flashed_messages() %}
