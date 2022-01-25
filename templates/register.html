@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>MelodyDB - Login</title>
+    <title>MelodyDB - Register</title>
     <link rel="icon" type="image/png" href="../static/images/favicon_16.png" sizes="16x16">
     <link rel="icon" type="image/png" href="../static/images/favicon_32.png" sizes="32x32">
     <link rel="icon" type="image/png" href="../static/images/favicon_96.png" sizes="96x96">
@@ -15,27 +15,33 @@
   <div class = "home_logo"></div>
   <div class = "search_box">
     <h1>Register</h1>
-    
-    <form method="POST" action="/logins">
+    <div class="flashes">
+          {% for message in get_flashed_messages() %}
+            {{ message }}
+          {% endfor %}
+        </div>
+    <form method="POST" action="/register">
       <label for="uname">Username</label>
       <br>
       <input type="text" placeholder="Enter Username" name='uname' required></input>
+      <br>
+      <label for="email">Email</label>
+      <br>
+      <input type="email" placeholder="Enter Email" name='email' required></input>
       <br>
       <label for="psw">Password</label>
       <br>
       <input type="password" placeholder="Enter Password" name='psw' required></input>
       <br>
+      <input type="password" placeholder="Confirm Password" name='psw_confirm' required></input>
+      <br>
       <button type='submit'>Register</button>
     </form>
     <p>Already signed up?</p>
-    <div class = "login_redirect"><a href="/logins">Login</a></div>
-    
+    <div class = "login_redirect"><a class="btn btn-primary" href="/"><span style = "position: relative; top: -5px;">Login</span></a></div>
+
     <p><a href="/guest_login">Continue as Guest</a></p>
-    <div class="flashes">
-      {% for message in get_flashed_messages() %}
-        {{ message }}
-      {% endfor %}
-    </div>
+    
   </div>
 
 </body>

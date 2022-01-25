@@ -1,4 +1,5 @@
 import os
+import hashlib
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, session, url_for, flash, Markup
@@ -59,7 +60,7 @@ def artist():
 
   if len(ids) == 0:
     print("artist not found")
-    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find artist \'{}\'</span>".format(artist_name))
+    msg = Markup("<span style=\"background-color: #FF9595\">Could not find artist \'{}\'</span>".format(artist_name))
     flash(msg)
     return redirect('/index')
   
@@ -108,7 +109,7 @@ def user():
 
   if len(ids) == 0:
     print("user not found")
-    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find user \'{}\'</span>".format(user_name))
+    msg = Markup("<span style=\"background-color: #FF9595\">Could not find user \'{}\'</span>".format(user_name))
     flash(msg)
     return redirect('/index')
   
@@ -162,7 +163,7 @@ def album():
   
   if len(ids) == 0:
     print("album not found")
-    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find album \'{}\'</span>".format(album_name))
+    msg = Markup("<span style=\"background-color: #FF9595\">Could not find album \'{}\'</span>".format(album_name))
     flash(msg)
     return redirect('/index')
   elif len(ids) > 1:
@@ -282,7 +283,7 @@ def song():
 
   if len(ids) == 0:
     print("song not found")
-    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find song \'{}\'</span>".format(song_name))
+    msg = Markup("<span style=\"background-color: #FF9595\">Could not find song \'{}\'</span>".format(song_name))
     flash(msg)
     return redirect('/index')
   elif len(durations) > 1:
@@ -359,6 +360,8 @@ def song_name(song_id):
 def user_rates(rating):
   print(session['client_id'])
   if session['client_id'] == 0:
+    msg = Markup("<span style=\"background-color: #FF9595\">Please login to add ratings</span>")
+    flash(msg)
     return redirect('/')
   try:
     cursor = g.conn.execute("INSERT INTO user_rates_song(song_id, rating, user_id) VALUES(%s, %s, %s)", session['song_id'], rating, session['client_id'])
@@ -440,7 +443,7 @@ def search():
   searched_name = request.form['name']
   search_type = request.form['type']
   if len(searched_name) == 0:
-    msg = Markup("<span style=\"background-color: #FFCCCC\">Please fill the search field</span>")
+    msg = Markup("<span style=\"background-color: #FF9595\">Please fill the search field</span>")
     flash(msg)
     return redirect('/index')
   if search_type == "artist":
@@ -472,7 +475,10 @@ def logins():
     uid.append(result['user_id'])
   cursor.close()
   if len(pword)!=0:
-    if password == pword[0]:
+    hashed_pw = hashpw(password, (int(uid[0]) * 2) + 3)
+    print(hashed_pw)
+    print(pword[0])
+    if hashed_pw == pword[0]:
       session['client_id']=uid[0]
       cursor = g.conn.execute("SELECT * FROM moderator WHERE user_id = %s",session['client_id'])
       mod_id = []
@@ -489,12 +495,12 @@ def logins():
       return redirect(url_for('.index', client_id = session['client_id']))
     else:
       print("Wrong password")
-      msg = Markup("<span style=\"background-color: #FFCCCC\">Wrong password, try again.</span>")
+      msg = Markup("<span style=\"background-color: #FF9595\">Wrong password. Please try again.</span>")
       flash(msg)
       return redirect('/')
   else:
     print("User not found")
-    msg = Markup("<span style=\"background-color: #FFCCCC\">Could not find user \'{}\'</span>".format(uname))
+    msg = Markup("<span style=\"background-color: #FF9595\">Could not find user \'{}\'</span>".format(uname))
     flash(msg)
     return redirect('/')
 
@@ -503,7 +509,70 @@ def guest_login():
   session['selected_user'] = True
   session['user_name'] = 'Guest'
   return redirect(url_for('.index', client_id = 0))
- 
+
+@app.route('/registration')
+def registration():
+  return render_template("register.html")
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+  uname = request.form['uname']
+  email = request.form['email']
+  password = request.form['psw']
+  password_confirm = request.form['psw_confirm']
+  uid = []
+
+  # Check to make sure registration entries are valid
+  total_num = sum(c.isdigit() for c in password)
+  if total_num < 2:
+    msg = Markup("<span style=\"background-color: #FF9595\">Password must contain at least two numbers.</span>")
+    flash(msg)
+    return redirect('/registration')
+
+  if password != password_confirm:
+    msg = Markup("<span style=\"background-color: #FF9595\">Confirm password must match password.</span>")
+    flash(msg)
+    return redirect('/registration')
+
+  cursor = g.conn.execute("SELECT * FROM users WHERE LOWER(username) = LOWER(%s)",uname)
+  for result in cursor:
+    uid.append(result['user_id'])
+
+  if len(uid) > 0:
+    msg = Markup("<span style=\"background-color: #FF9595\">Username already in use. Please try a different username.</span>")
+    flash(msg)
+    return redirect('/registration')
+
+  cursor = g.conn.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)",email)
+  for result in cursor:
+    uid.append(result['user_id'])
+
+  if len(uid) > 0:
+    msg = Markup("<span style=\"background-color: #FF9595\">Email already in use. Please try a different email.</span>")
+    flash(msg)
+    return redirect('/registration')
+
+  #Register account
+  cursor = g.conn.execute("SELECT MAX(user_id) AS max_id FROM users")
+  for result in cursor:
+    uid.append(result['max_id'])
+
+  hashed_pw = hashpw(password, ((int(uid[0]) + 1) * 2) + 3)
+  cursor = g.conn.execute("INSERT INTO users(user_id, username, email, password) VALUES(%s, %s, %s, %s)", int(uid[0]) + 1, uname, email, hashed_pw)
+
+  session['client_id']= int(uid[0]) + 1
+  session['user_name'] = uname
+  session['selected_user'] = True
+  return redirect(url_for('.index', client_id = session['client_id']))
+
+#HASH PASSWORD n TIMES
+def hashpw(pw, n):
+  password = pw
+  while n > 0:
+    password = hashlib.md5(password.encode()).hexdigest()
+    n = n-1
+  return password
+
 ##EXECUTES WHEN COMMENT IS ADDED TO AN ALBUM PAGE
 @app.route('/album_comment', methods=['POST'])
 def album_comment():

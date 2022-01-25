@@ -15,6 +15,11 @@
   <div class = "home_logo"></div>
   <div class = "search_box">
     <h1>Login</h1>
+    <div class="flashes">
+      {% for message in get_flashed_messages() %}
+        {{ message }}
+      {% endfor %}
+    </div>
     
     <form method="POST" action="/logins">
       <label for="uname">Username</label>
@@ -27,13 +32,9 @@
       <br>
       <button type='submit'>Login</button>
     </form>
-    <div class = "register"><a class="btn btn-primary" href="/guest_login"><span style = "position: relative; top: -5px;">Register</span></a></div>
+    <div class = "register"><a class="btn btn-primary" href="/registration"><span style = "position: relative; top: -5px;">Register</span></a></div>
     <p><a href="/guest_login">Continue as Guest</a></p>
-    <div class="flashes">
-      {% for message in get_flashed_messages() %}
-        {{ message }}
-      {% endfor %}
-    </div>
+    
   </div>
 
 </body>
