@@ -1,12 +1,45 @@
+@font-face{
+    font-family: "TitilliumWeb-Regular";
+    src: url("fonts/TitilliumWeb-Regular.ttf")
+}
+
+@font-face{
+    font-family: "TitilliumWeb-SemiBold";
+    src: url("fonts/TitilliumWeb-SemiBold.ttf")
+}
+
+@font-face{
+    font-family: "TitilliumWeb-Light";
+    src: url("fonts/TitilliumWeb-Light.ttf")
+}
+
+@font-face{
+    font-family: "TitilliumWeb-Bold";
+    src: url("fonts/TitilliumWeb-Bold.ttf")
+}
+
+
 body {
-    background-color: #222222;
+    background-color: #0a0a0a;
     color: white;
     overflow-x: hidden;
+}
+
+.search_page_bg {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width:100%;
+    background: rgb(98,0,133);
+    background: -moz-linear-gradient(0deg, rgba(98,0,133,1) 0%, rgba(0,0,0,1) 65%);
+    background: -webkit-linear-gradient(0deg, rgba(98,0,133,1) 0%, rgba(0,0,0,1) 65%);
+    background: linear-gradient(0deg, rgba(98,0,133,1) 0%, rgba(0,0,0,1) 65%);  
 }
 
 body .artist_page{ 
     font-size: 15pt;
     font-family: arial;
+    left: 30px;
 }
 
 body .toolbar {
@@ -32,7 +65,10 @@ body .toolbar .account a{
 body .toolbar .account a div{
     height: 30px;
     min-width: 10px;
-    background-color: grey;
+    background-color: black;
+    border: white;
+    border-width: 2px;
+    border-style: solid;
     border-radius: 25px;
     display: flex;
     align-items: center;
@@ -57,14 +93,14 @@ body .toolbar .account a div p{
 body .dropdown {
     position: absolute;
     top: 10px;
-    right: 10px;
+    right: 30px;
     height:40px;
 }
 
 body .dropdown > div{
     position: absolute;
     width: 100%;
-    height: 4px;
+    height: 6px;
     background-color: #C73798;
     display: flex;
     align-items: center;
@@ -76,7 +112,7 @@ body .dropdown > div:before, body .dropdown > div:after{
     position: absolute;
     top: 12px;
     width: 100%;
-    height: 4px;
+    height: 6px;
     background-color: #FFFFFF;
 }
 
@@ -117,6 +153,9 @@ body .toolbar .dropdown .btn:focus{
     overflow-y: auto;
 }
 
+.login_page h1 {
+    font-family: "TitilliumWeb-SemiBold";
+}
 
 
 .login_page button{
@@ -188,6 +227,7 @@ body .toolbar .dropdown .btn:focus{
     background-size: contain;
     background-repeat: no-repeat;
     height: 50vw;
+    border: none;
 }
 
 .login_page .search_box {
@@ -197,6 +237,8 @@ body .toolbar .dropdown .btn:focus{
     top: 30vw;
     color: white;
 }
+
+
 
 body a:link{
     color: rgb(212, 212, 212);
@@ -319,9 +361,54 @@ body .track a:hover{
 
 body .search_page {
     position: absolute;
-    top: 60px;
+    top: 100px;
     width:100%;
+    text-align: center;
 }
+
+
+.search_page h1{
+    font-family: "TitilliumWeb-Bold";
+    font-size: 96pt;
+    user-select: none;
+}
+
+.search_page .search_bar {
+    width: 70%;
+    height: 50px;
+    text-align: center;
+    font-family: "TitilliumWeb-SemiBold";
+    font-size: 26pt;
+    border: none;
+
+}
+.search_page .search_type {
+    width: 230px;
+    height: 40px;
+    text-align: center;
+    font-family: "TitilliumWeb-Bold";
+    font-size: 20pt;
+    margin-top: 10px;
+    border: none;
+}
+.search_page .search_button {
+    width: 150px;
+    height: 60px;
+    text-align: center;
+    font-family: "TitilliumWeb-Bold";
+    font-size: 30pt;
+    margin-top: 20px;
+    border-radius: 10px;
+    border: none;
+}
+
+.search_page button:hover{
+    width:160px;
+    height:70px;
+    font-size: 33pt;
+    transition: 0.1s
+}
+
 
 body .album_page {
     position: absolute;
@@ -331,8 +418,9 @@ body .album_page {
 
 body .artist_page {
     position: absolute;
-    top: 60px;
+    top: 100px;
     width:100%;
+    text-align: center;
 }
 
 body .song_page {
@@ -346,10 +434,11 @@ body .user_page {
     position: absolute;
     top: 60px;
     width:100%;
+    left: 30px;
 }
 
 body .album_page h4{
-    color: rgb(169, 169, 169);
+    color: rgb(255, 255, 255);
     user-select: none;
 }
 
@@ -362,12 +451,25 @@ body .page_title {
     height:100%;
 }
 
-body .page_title h1 {
+body .logo_button{
+    position: absolute;
+    top: 20%;
+    height: 50%;
+    width: 190px;
+    max-width: 25vw;
+    background-image: url("images/corner_logo.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    left: 2%;
+}
+
+body .album_page h1 {
+    margin-left: 5px;
     user-select: none;
 }
 
 body .album_page h2{
-    margin-left: 10px;
+    margin-left: 5px;
     user-select: none;
 }
 
