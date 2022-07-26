@@ -13,9 +13,8 @@
 
 <body>
   <div class="toolbar">
-    <div class = "page_title" >
-      <h1 class = "page_head">&nbspAlbum  •  {{data_titles[0]}}</h1>
-    </div>
+    <a href ="/index"><div class = "logo_button"></div></a>
+
     
     <div class="account">
     {% if client_id > 0 %}  
@@ -43,6 +42,7 @@
     </div>
   </div>
   <div class = "album_page">
+    <h1 class = "page_head">{{data_titles[0]}}</h1>
     <h2><a href="/artist_id/{{artist_id}}">{{data_artist_names[0]}}</a></h2>
     <h4>&nbsp{{data_release_year}} • {{data_album_len}} tracks&ensp;•&ensp;{{data_album_duration}}</h4>
 

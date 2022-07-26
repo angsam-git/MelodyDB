@@ -12,10 +12,9 @@
 
 
 <body>
+  <div class = "search_page_bg"></div>
   <div class="toolbar">
-    <div class = "page_title" >
-      <h1 class = "page_head">&nbspSearch</h1>
-    </div>
+    <a href ="/index"><div class = "logo_button"></div></a>
     {% if client_id > 0 %}
     <div class="account">
         <a href="/user_id/{{client_id}}"><div><img src="../static/images/account_icon.png"></img><p>{{user_name}}</p></div></a>
@@ -42,17 +41,18 @@
   </div>
   <div class = "search_page">
 
-    <h1>Melody DB</h1>
+    <h1>SEARCH</h1>
 
-    <form method="POST" action="/search">
-      <p>Search: <input type="text" name="name"> <input type="submit" value="Search"></p>
-      <label for="type">Type:</label>
-      <select name="type" id="type">
-        <option value="artist">Artist</option>
-        <option value="album">Album</option>
-        <option value="song">Song</option>
-        <option value="user">User</option>
-      </select>
+    <form autocomplete="off" method="POST" action="/search">
+      <input class="search_bar" type="text" name="name"> <br>
+      <select class="search_type" name="type" id="type">
+        <option value="default">SEARCHTYPE</option>
+        <option value="artist">ARTIST</option>
+        <option value="album">ALBUM</option>
+        <option value="song">SONG</option>
+        <option value="user">USER</option>
+      </select><br>
+      <button class="search_button" type="submit">ENTER</button>
     </form>
     <div class="flashes">
       {% for message in get_flashed_messages() %}

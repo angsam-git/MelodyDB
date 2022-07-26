@@ -13,10 +13,11 @@
 
 
 <body>
+  <div class = "search_page_bg"></div>
+
   <div class="toolbar">
-    <div class = "page_title" >
-      <h1 class = "page_head">&nbspArtist  •  {{data_names[0]}}</h1>
-    </div>
+    <a href ="/index"><div class = "logo_button"></div></a>
+
     <div class="account">
       {% if client_id > 0 %}  
           <a href="/user_id/{{client_id}}"><div><img src="../static/images/account_icon.png"></img><p>{{user_name}}</p></div></a>
@@ -43,8 +44,7 @@
     </div>
   </div>
   <div class = "artist_page">
-    <h1>Melody DB Artist Page</h1>
-    <h2>{{data_names[0]}}</h2>
+    <h1>{{data_names[0]}}</h1>
     <h4>Albums:</h4>
     <div>
       {% for n in data_album_names %}
