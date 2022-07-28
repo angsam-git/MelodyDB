@@ -7,7 +7,7 @@ from flask import Flask, request, render_template, g, redirect, Response, sessio
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 
-DATABASEURI = "postgresql://postgres:melody@localhost:5432/MelodyDB"
+DATABASEURI = "[redacted]"
 
 engine = create_engine(DATABASEURI)
 
@@ -446,7 +446,11 @@ def search():
     msg = Markup("<span style=\"background-color: #FF9595\">Please fill the search field</span>")
     flash(msg)
     return redirect('/index')
-  if search_type == "artist":
+  if search_type == "default":
+    msg = Markup("<span style=\"background-color: #FF9595\">Please select a search type</span>")
+    flash(msg)
+    return redirect('/index')
+  elif search_type == "artist":
     session['artist'] = searched_name
     return redirect(url_for('.artist', artist = searched_name))
   elif search_type == "album":
@@ -475,7 +479,7 @@ def logins():
     uid.append(result['user_id'])
   cursor.close()
   if len(pword)!=0:
-    hashed_pw = hashpw(password, (int(uid[0]) * 2) + 3)
+    hashed_pw = hashpw(password)
     print(hashed_pw)
     print(pword[0])
     if hashed_pw == pword[0]:
@@ -521,6 +525,12 @@ def register():
   password = request.form['psw']
   password_confirm = request.form['psw_confirm']
   uid = []
+  
+
+  if len(uname) > 30:
+    msg = Markup("<span style=\"background-color: #FF9595\">Username must not exceed 30 characters.</span>")
+    flash(msg)
+    return redirect('/registration')
 
   # Check to make sure registration entries are valid
   total_num = sum(c.isdigit() for c in password)
@@ -543,7 +553,7 @@ def register():
     flash(msg)
     return redirect('/registration')
 
-  cursor = g.conn.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)",email)
+  cursor = g.conn.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", email)
   for result in cursor:
     uid.append(result['user_id'])
 
@@ -557,7 +567,7 @@ def register():
   for result in cursor:
     uid.append(result['max_id'])
 
-  hashed_pw = hashpw(password, ((int(uid[0]) + 1) * 2) + 3)
+  hashed_pw = hashpw(password)
   cursor = g.conn.execute("INSERT INTO users(user_id, username, email, password) VALUES(%s, %s, %s, %s)", int(uid[0]) + 1, uname, email, hashed_pw)
 
   session['client_id']= int(uid[0]) + 1
@@ -566,12 +576,10 @@ def register():
   return redirect(url_for('.index', client_id = session['client_id']))
 
 #HASH PASSWORD n TIMES
-def hashpw(pw, n):
-  password = pw
-  while n > 0:
-    password = hashlib.md5(password.encode()).hexdigest()
-    n = n-1
-  return password
+def hashpw(pw):
+  # The real algorithm is redacted of course
+  hashed_password = hashlib.md5(pw.encode()).hexdigest() 
+  return hashed_password
 
 ##EXECUTES WHEN COMMENT IS ADDED TO AN ALBUM PAGE
 @app.route('/album_comment', methods=['POST'])
