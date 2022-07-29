@@ -3,6 +3,7 @@ import hashlib
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, session, url_for, flash, Markup
+from datetime import datetime
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -115,13 +116,30 @@ def user():
   
   ##COMMENTS COUNT FOR USER PAGE
   user_id = ids[0]
-  cursor = g.conn.execute("SELECT * FROM comment WHERE user_id = %s", user_id)
+  cursor = g.conn.execute("SELECT text, comment_id, album_id, song_id, time_stamp FROM comment WHERE user_id=%s and comment_id NOT IN (SELECT comment_id FROM moderator_comment) order by comment_id desc",user_id)
+
   comment_num=0
+  comments = []
+  comments_content_id = []
   for result in cursor:
+    comments.append((result['comment_id'], result['text'], result['time_stamp']))
+    if result['song_id'] is None:
+      comments_content_id.append(("album", result['album_id']))
+    else:
+      comments_content_id.append(("song", result['song_id']))
     comment_num+=1
   cursor.close()
 
-  context = dict(emails=emails,username=names,comment_num=comment_num,user_ids=ids, client_id = session['client_id'],user_name = session['user_name'])
+  comments_content_name = []
+  for c in comments_content_id:
+    print(c[0])
+    cursor = g.conn.execute("SELECT title FROM {} WHERE {}_id={}".format(c[0], c[0], c[1]))
+    for result in cursor:
+      comments_content_name.append(result['title'])
+
+  cursor.close()
+  session['user_ref'] = True
+  context = dict(emails=emails,username=names,comment_num=comment_num,user_ids=ids, client_id = session['client_id'],user_name = session['user_name'], comments=comments, comments_content_id=comments_content_id, comments_content_name = comments_content_name, mod_id = session['moderator'])
   return render_template("user.html", **context)
 
 ## Executes when an user hyperlink is clicked
@@ -142,6 +160,7 @@ def album():
     session['client_id'] = 0
     session['moderator'] = 0
 
+  session['user_ref'] = False
   print(request.args)
   if len(session['album']) == 0:
     album_id = session['album_id']
@@ -155,6 +174,7 @@ def album():
   titles = []
   ids = []
   dates = []
+  
   ##GET ALBUM INFO FOR ALBUM PAGE
   for result in cursor:
     titles.append(result['title'])
@@ -217,12 +237,12 @@ def album():
     artist_names.append(result['name'])
   
   ##GET COMMENT TEXT FOR ALBUM PAGE
-  cursor = g.conn.execute("SELECT text, comment_id, user_id FROM comment WHERE album_id=%s and comment_id NOT IN (SELECT comment_id FROM moderator_comment) order by comment_id desc",album_id)
+  cursor = g.conn.execute("SELECT text, comment_id, user_id, time_stamp FROM comment WHERE album_id=%s and comment_id NOT IN (SELECT comment_id FROM moderator_comment) order by comment_id desc",album_id)
   comments = []
   comment_ids = []
   user_ids = []
   for result in cursor:
-    comments.append(result['text'])
+    comments.append((result['text'], result['time_stamp']))
     comment_ids.append(result['comment_id'])
     user_ids.append(result['user_id'])
 
@@ -254,6 +274,7 @@ def song():
     session['client_id'] = 0
     session['moderator'] = 0
 
+  session['user_ref'] = False
   print(request.args)
   if len(session['song']) == 0:
     song_id = session['song_id']
@@ -317,12 +338,12 @@ def song():
   cursor.close()
 
   ##GET COMMENTS FOR SONG PAGE
-  cursor = g.conn.execute("SELECT text, comment_id, user_id FROM comment WHERE song_id=%s and comment_id NOT IN (SELECT comment_id FROM moderator_comment) order by comment_id desc",song_id)
+  cursor = g.conn.execute("SELECT text, comment_id, user_id, time_stamp FROM comment WHERE song_id=%s and comment_id NOT IN (SELECT comment_id FROM moderator_comment) order by comment_id desc",song_id)
   comments = []
   comment_ids = []
   user_ids = []
   for result in cursor:
-    comments.append(result['text'])
+    comments.append((result['text'], result['time_stamp']))
     comment_ids.append(result['comment_id'])
     user_ids.append(result['user_id'])
   cursor.close()
@@ -568,9 +589,11 @@ def register():
     uid.append(result['max_id'])
 
   hashed_pw = hashpw(password)
-  cursor = g.conn.execute("INSERT INTO users(user_id, username, email, password) VALUES(%s, %s, %s, %s)", int(uid[0]) + 1, uname, email, hashed_pw)
+  new_id = int(uid[0]) + 1
 
-  session['client_id']= int(uid[0]) + 1
+  cursor = g.conn.execute("INSERT INTO users(user_id, username, email, password) VALUES(%s, %s, %s, %s)", new_id, uname, email, hashed_pw)
+
+  session['client_id']= new_id
   session['user_name'] = uname
   session['selected_user'] = True
   return redirect(url_for('.index', client_id = session['client_id']))
@@ -578,7 +601,7 @@ def register():
 #HASH PASSWORD n TIMES
 def hashpw(pw):
   # The real algorithm is redacted of course
-  hashed_password = hashlib.md5(pw.encode()).hexdigest() 
+  hashed_password = hashlib.md5(pw.encode()).hexdigest()
   return hashed_password
 
 ##EXECUTES WHEN COMMENT IS ADDED TO AN ALBUM PAGE
@@ -597,7 +620,7 @@ def album_comment():
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
   for result in cursor:
     comment_id = result['comment_id']
-  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, %s, null)', text, comment_id + 1, session['client_id'], album_id)
+  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id, time_stamp) VALUES (%s, %s, %s, %s, null, TIMESTAMP %s)', text, comment_id + 1, session['client_id'], album_id, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
   return redirect(url_for('.album', album = session['album_id']))
 
 ##EXECUTES WHEN COMMENT IS ADDED TO A SONG PAGE
@@ -616,7 +639,7 @@ def song_comment():
   cursor = g.conn.execute("SELECT MAX(comment_id) as comment_id FROM comment")
   for result in cursor:
     comment_id = result['comment_id']
-  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id) VALUES (%s, %s, %s, null, %s)', text, comment_id + 1, session['client_id'], song_id)
+  g.conn.execute('INSERT INTO comment(text, comment_id, user_id, album_id, song_id, time_stamp) VALUES (%s, %s, %s, null, %s, TIMESTAMP %s)', text, comment_id + 1, session['client_id'], song_id, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
   return redirect(url_for('.song', song = session['song_id']))
 
 ##DELETE COMMENTS BY ADDING INTO MODERATOR_COMMENT TABLE
@@ -627,6 +650,10 @@ def delete(comment_id):
     g.conn.execute('INSERT INTO moderator_comment(user_id, comment_id) VALUES (%s, %s)', mod_id, comment_id)
   else:
     g.conn.execute('INSERT INTO moderator_comment(user_id, comment_id) VALUES (%s, %s)', 1, comment_id) ##when a user deletes their own comment, moderator 1 is used
+  
+  if session['user_ref'] is not None and session['user_ref']:
+    return redirect(url_for('.user'))
+
   if int(session['song_id']) > 0:
     song_id = session['song_id']
     return redirect(url_for('.song', song = song_id))

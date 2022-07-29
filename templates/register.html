@@ -11,38 +11,45 @@
     <link rel="stylesheet" href="../static/style.css"/>
   </head>
 
-<body class="login_page">
-  <div class = "home_logo"></div>
-  <div class = "search_box">
-    <h1>Register</h1>
-    <div class="flashes">
-          {% for message in get_flashed_messages() %}
-            {{ message }}
-          {% endfor %}
+  <body>
+    <div class="page_container">
+      <div class="login_page">
+        <div class = "home_logo"></div>
+        <div class = "search_box">
+          <h1>Register</h1>
+          <div class="flashes">
+                {% for message in get_flashed_messages() %}
+                  {{ message }}
+                {% endfor %}
+              </div>
+          <form method="POST" action="/register">
+            <label for="uname">Username</label>
+            <br>
+            <input type="text" placeholder="Enter Username" name='uname' required></input>
+            <br>
+            <label for="email">Email</label>
+            <br>
+            <input type="email" placeholder="Enter Email" name='email' required></input>
+            <br>
+            <label for="psw">Password</label>
+            <br>
+            <input type="password" placeholder="Enter Password" name='psw' required></input>
+            <br>
+            <input type="password" placeholder="Confirm Password" name='psw_confirm' required></input>
+            <br>
+            <button type='submit'>Register</button>
+          </form>
+          <p>Already signed up?</p>
+          <div class = "login_redirect"><a class="btn btn-primary" href="/"><span style = "position: relative; top: -5px;">Login</span></a></div>
+
+          <p><a href="/guest_login">Continue as Guest</a></p>
+          
         </div>
-    <form method="POST" action="/register">
-      <label for="uname">Username</label>
-      <br>
-      <input type="text" placeholder="Enter Username" name='uname' required></input>
-      <br>
-      <label for="email">Email</label>
-      <br>
-      <input type="email" placeholder="Enter Email" name='email' required></input>
-      <br>
-      <label for="psw">Password</label>
-      <br>
-      <input type="password" placeholder="Enter Password" name='psw' required></input>
-      <br>
-      <input type="password" placeholder="Confirm Password" name='psw_confirm' required></input>
-      <br>
-      <button type='submit'>Register</button>
-    </form>
-    <p>Already signed up?</p>
-    <div class = "login_redirect"><a class="btn btn-primary" href="/"><span style = "position: relative; top: -5px;">Login</span></a></div>
-
-    <p><a href="/guest_login">Continue as Guest</a></p>
-    
-  </div>
-
-</body>
+      </div>
+    </div>
+    <footer class = "footer">
+      <p>Copyright 2022 © Angel Samuel Mendez</p>
+      <a href="https://github.com/angsam-git/MelodyDB" target="_blank">WEBSITE GITHUB REPO</a>
+    </footer>
+  </body>
 </html>

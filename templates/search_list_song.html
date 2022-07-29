@@ -11,65 +11,68 @@
   </head>
 
 
-<body>
-  <div class = "search_page_bg"></div>
-  <div class="toolbar">
-    <a href ="/index"><div class = "logo_button"></div></a>
-    <div class="account">
-      {% if client_id > 0 %}  
-          <a href="/user_id/{{client_id}}"><div><img src="../static/images/account_icon.png"></img><p>{{user_name}}</p></div></a>
-      {% else %}
-            <p style="user-select: none;"> Guest View </p>
-      {% endif %}
-    </div>
+  <body>
+    <div class="page_container">
+      <div class = "search_page_bg"></div>
+      <div class="toolbar">
+        <a href ="/index"><div class = "logo_button"></div></a>
+        <div class="account">
+          {% if client_id > 0 %}  
+              <a href="/user_id/{{client_id}}"><div><img src="../static/images/account_icon.png"></img><p>{{user_name}}</p></div></a>
+          {% else %}
+                <p style="user-select: none;"> Guest View </p>
+          {% endif %}
+        </div>
 
-    <div class="dropdown">
-        <div></div>
-        <div></div>
-        <div></div>
-      <button class="btn" type="button" id="dropdownmenu" data-toggle="dropdown">
+        <div class="dropdown">
+            <div></div>
+            <div></div>
+            <div></div>
+          <button class="btn" type="button" id="dropdownmenu" data-toggle="dropdown">
 
-        <span class="caret"></span>
-      </button>
-      <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownmenu">
-        <li><a href="/index">Home</a></li>
-        {% if client_id > 0 %}
-          <li><a href="/logout">Log out</a></li>
-        {% else %}
-          <li><a href="/">Log in</a></li>
-        {% endif %}
-      </ul>
-    </div>
-  </div>
-  <div class = "search_page">
-    <h2>{{title[0]}}</h2>
-    <div>
-      {% for n in artist_names %}
-        {% set outer_loop = loop %}
-        {% for m in ids %}
-          {% if outer_loop.index0 == loop.index0 %}
-            {% for j in album_names %}
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownmenu">
+            <li><a href="/index">Home</a></li>
+            {% if client_id > 0 %}
+              <li><a href="/logout">Log out</a></li>
+            {% else %}
+              <li><a href="/">Log in</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+      <div class = "search_page">
+        <h2>{{title[0]}}</h2>
+        <div>
+          {% for n in artist_names %}
+            {% set outer_loop = loop %}
+            {% for m in ids %}
               {% if outer_loop.index0 == loop.index0 %}
-                {% for k in years %}
+                {% for j in album_names %}
                   {% if outer_loop.index0 == loop.index0 %}
-                    <a href = "/song_id/{{m}}">{{title[0]}} by {{n}} from {{j}} ({{k}})<br></a>
+                    {% for k in years %}
+                      {% if outer_loop.index0 == loop.index0 %}
+                        <a href = "/song_id/{{m}}">{{title[0]}} by {{n}} from {{j}} ({{k}})<br></a>
+                      {% endif %}
+                    {% endfor %}
                   {% endif %}
                 {% endfor %}
               {% endif %}
             {% endfor %}
-          {% endif %}
-        {% endfor %}
-      {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+      <h2>{{title[0]}}</h2>
     </div>
-  </div>
-  <h2>{{title[0]}}</h2>
-  
+    <footer class = "footer">
+      <p>Copyright 2022 © Angel Samuel Mendez</p>
+      <a href="https://github.com/angsam-git/MelodyDB" target="_blank">WEBSITE GITHUB REPO</a>
+    </footer>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
 
-  <script src="nav.js"></script>
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
-
-</body>
+  </body>
 
 </html>

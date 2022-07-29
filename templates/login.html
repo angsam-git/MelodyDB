@@ -10,32 +10,41 @@
     <link rel="stylesheet" type="text/css" href="../static/bootstrap.min.css">
     <link rel="stylesheet" href="../static/style.css"/>
   </head>
+  <body>
+    <div class="page_container">
+      <div class="login_page">
+        <div class = "home_logo"></div>
+        <div class = "search_box">
+          <h1>Login</h1>
+          <div class="flashes">
+            {% for message in get_flashed_messages() %}
+              {{ message }}
+            {% endfor %}
+          </div>
+          
+          <form autocomplete="off" method="POST" action="/logins">
+            <label for="uname">Username</label>
+            <br>
+            <input type="text" placeholder="Enter Username" name='uname' required></input>
+            <br>
+            <label for="psw">Password</label>
+            <br>
+            <input type="password" placeholder="Enter Password" name='psw' required></input>
+            <br>
+            <button type='submit'>Login</button>
+          </form>
+          <div class = "register"><a class="btn btn-primary" href="/registration"><span style = "position: relative; top: -5px;">Register</span></a></div>
+          <p><a href="/guest_login">Continue as Guest</a></p>
+          
+        </div>
 
-<div class="login_page">
-  <div class = "home_logo"></div>
-  <div class = "search_box">
-    <h1>Login</h1>
-    <div class="flashes">
-      {% for message in get_flashed_messages() %}
-        {{ message }}
-      {% endfor %}
+
+      </div>
     </div>
-    
-    <form autocomplete="off" method="POST" action="/logins">
-      <label for="uname">Username</label>
-      <br>
-      <input type="text" placeholder="Enter Username" name='uname' required></input>
-      <br>
-      <label for="psw">Password</label>
-      <br>
-      <input type="password" placeholder="Enter Password" name='psw' required></input>
-      <br>
-      <button type='submit'>Login</button>
-    </form>
-    <div class = "register"><a class="btn btn-primary" href="/registration"><span style = "position: relative; top: -5px;">Register</span></a></div>
-    <p><a href="/guest_login">Continue as Guest</a></p>
-    
-  </div>
+    <footer class = "footer">
+      <p>Copyright 2022 © Angel Samuel Mendez</p>
+      <a href="https://github.com/angsam-git/MelodyDB" target="_blank">WEBSITE GITHUB REPO</a>
+    </footer>
+  </body>
 
-</div>
 </html>

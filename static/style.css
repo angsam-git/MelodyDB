@@ -25,7 +25,7 @@ body {
     overflow-x: hidden;
 }
 
-.search_page_bg {
+.search_page_bg{
     position: absolute;
     top: 0;
     height: 100%;
@@ -33,7 +33,8 @@ body {
     background: rgb(98,0,133);
     background: -moz-linear-gradient(0deg, rgba(98,0,133,1) 0%, rgba(0,0,0,1) 65%);
     background: -webkit-linear-gradient(0deg, rgba(98,0,133,1) 0%, rgba(0,0,0,1) 65%);
-    background: linear-gradient(0deg, rgba(98,0,133,1) 0%, rgba(0,0,0,1) 65%);  
+    background: linear-gradient(0deg, rgba(98,0,133,1) 0%, rgba(0,0,0,1) 65%);
+    z-index: -1;
 }
 
 body .artist_page{ 
@@ -127,6 +128,7 @@ body .toolbar .dropdown .dropdown-menu{
     text-align: center;
     min-width:100%;
     box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.58);
+    position: absolute;
 }
 
 body .toolbar .dropdown .dropdown-menu a{
@@ -229,6 +231,7 @@ body .toolbar .dropdown .btn:focus{
     height: 50vw;
     border: none;
 }
+
 
 .login_page .search_box {
     width: 100%;
@@ -544,6 +547,7 @@ body .song_page .add_rating label:hover::after,
 
 body .song_page .comments{
     margin: 0 auto;
+    transform: translateX(-30px);
     width: 50%;
     background-color: rgb(0, 0, 0);
     border-radius: 10px;
@@ -551,7 +555,19 @@ body .song_page .comments{
     padding-top: 10px;
 }
 
+body .comments h4{
+    transform: translateX(30px);
+}
+
 body .album_page .comments{
+    width: 50%;
+    background-color: rgb(0, 0, 0);
+    border-radius: 10px;
+    margin-top: 30px;
+    padding-top: 10px;
+}
+
+body .user_page .comments{
     width: 50%;
     background-color: rgb(0, 0, 0);
     border-radius: 10px;
@@ -656,4 +672,30 @@ body .comments .trash:hover{
 body .comments a:nth-child(3){
     height:34px;
     width: 32px;
+}
+
+.footer{
+    height: 5rem;
+    width:100%;
+    box-shadow: 0px 3px 11px 2px rgba(0,0,0,0.65);
+    text-align: left;
+    color: white;
+}
+
+.footer p{
+    top: 10px;
+}
+
+.footer p, .footer a{
+    position: relative;
+    left: 10px;
+}
+
+.page_container {
+    position: relative;
+    min-height: 100vh;
+}
+
+.song_body {
+    background-color: rgb(10, 0, 8);
 }
