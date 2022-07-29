@@ -1,6 +1,6 @@
 # MelodyDB
 
-https://melodydbdeploy.herokuapp.com/
+https://melodydb.herokuapp.com/
 
 <img src = "melody.png" width = 700 > 
 
